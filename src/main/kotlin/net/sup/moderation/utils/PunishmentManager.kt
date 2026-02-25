@@ -108,18 +108,6 @@ object PunishmentManager {
     fun getBan(uuid: UUID): BanEntry? = bans[uuid]
     fun isBanned(uuid: UUID): Boolean = bans.containsKey(uuid)
 
-    fun mute(uuid: UUID, until: Long, reason: String, issuer: String) {
-        mutes[uuid] = MuteEntry(uuid, until, reason, issuer)
-        saveAll()
-    }
-
-    fun unmute(uuid: UUID) {
-        mutes.remove(uuid)
-        saveAll()
-    }
-
-    fun getMute(uuid: UUID): MuteEntry? = mutes[uuid]
-
     fun warn(uuid: UUID, reason: String, issuer: String) {
         val entry = WarnEntry(uuid, reason, issuer, System.currentTimeMillis())
         warns.computeIfAbsent(uuid) { mutableListOf() }.add(entry)
