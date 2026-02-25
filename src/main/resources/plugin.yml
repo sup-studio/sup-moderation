@@ -1,0 +1,4 @@
+name: sup-moderation
+version: '1.0-SNAPSHOT'
+main: net.sup.moderation.SupModeration
+api-version: '1.21'
