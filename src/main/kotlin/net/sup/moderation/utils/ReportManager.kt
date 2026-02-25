@@ -6,12 +6,10 @@ import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
 
 object ReportManager {
-
     private lateinit var file: File
     private lateinit var config: FileConfiguration
 
     fun init(plugin: JavaPlugin) {
-
         if (!plugin.dataFolder.exists()) {
             plugin.dataFolder.mkdirs()
         }
@@ -34,7 +32,6 @@ object ReportManager {
         target: String,
         reason: String
     ) {
-
         val id = System.currentTimeMillis().toString()
 
         config.set("reports.$id.reporter", reporter)

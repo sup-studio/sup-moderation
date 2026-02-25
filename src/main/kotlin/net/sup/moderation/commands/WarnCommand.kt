@@ -18,6 +18,7 @@ class WarnCommand : CommandExecutor {
         val reason = args.copyOfRange(1, args.size).joinToString(" ")
         PunishmentManager.warn(target.uniqueId, reason, sender.name)
         sender.sendMessage("§a${target.name} verwarnt.")
+        target.sendMessage("§aDu wurdest wegen ${reason} verwarnt.")
         return true
     }
 }

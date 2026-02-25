@@ -13,12 +13,10 @@ import java.nio.charset.StandardCharsets
 import java.util.*
 
 class ReportCommand : CommandExecutor {
-
     private val webhookUrl: String
         get() = SupModeration.instance.config.getString("discord.webhook") ?: throw IllegalStateException("Webhook fehlt in config.yml")
 
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-
         if (label.equals("report", true)) {
 
             if (sender !is Player) return false

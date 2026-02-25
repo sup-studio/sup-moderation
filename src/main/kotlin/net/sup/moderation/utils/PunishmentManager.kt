@@ -4,8 +4,9 @@ import net.sup.moderation.SupModeration
 import org.bukkit.configuration.file.YamlConfiguration
 import java.io.File
 import java.util.*
+import java.util.concurrent.TimeUnit
 
-data class BanEntry(val uuid: UUID, val reason: String?, val issuer: String?, val time: Long)
+data class BanEntry(val uuid: UUID, val reason: String?, val issuer: String?, val time: Long, val until: Long = -1L)
 data class MuteEntry(val uuid: UUID, val until: Long, val reason: String?, val issuer: String?)
 data class WarnEntry(val uuid: UUID, val reason: String, val issuer: String, val time: Long)
 
@@ -35,6 +36,13 @@ object PunishmentManager {
         loadAll()
     }
 
+    fun reload() {
+        bansCfg = YamlConfiguration.loadConfiguration(bansFile)
+        mutesCfg = YamlConfiguration.loadConfiguration(mutesFile)
+        warnsCfg = YamlConfiguration.loadConfiguration(warnsFile)
+        loadAll()
+    }
+
     fun loadAll() {
         bans.clear()
         mutes.clear()
@@ -44,7 +52,8 @@ object PunishmentManager {
             val reason = bansCfg.getString("$k.reason", "No reason")
             val issuer = bansCfg.getString("$k.issuer", "Console")
             val time = bansCfg.getLong("$k.time", System.currentTimeMillis())
-            bans[uuid] = BanEntry(uuid, reason, issuer, time)
+            val until = bansCfg.getLong("$k.until", -1L)
+            bans[uuid] = BanEntry(uuid, reason, issuer, time, until)
         }
         mutesCfg.getKeys(false).forEach { k ->
             val uuid = UUID.fromString(k)
@@ -75,6 +84,7 @@ object PunishmentManager {
             bansCfg.set("$k.reason", entry.reason)
             bansCfg.set("$k.issuer", entry.issuer)
             bansCfg.set("$k.time", entry.time)
+            bansCfg.set("$k.until", entry.until)
         }
         mutes.forEach { (uuid, entry) ->
             val k = uuid.toString()
@@ -93,7 +103,14 @@ object PunishmentManager {
     }
 
     fun ban(uuid: UUID, reason: String, issuer: String) {
-        bans[uuid] = BanEntry(uuid, reason, issuer, System.currentTimeMillis())
+        bans[uuid] = BanEntry(uuid, reason, issuer, System.currentTimeMillis(), -1L)
+        saveAll()
+    }
+
+    fun ban(uuid: UUID, reason: String, issuer: String, length: String) {
+        val until = parseDuration(length)
+            ?: throw IllegalArgumentException("Ungültige Zeitangabe: '$length'")
+        bans[uuid] = BanEntry(uuid, reason, issuer, System.currentTimeMillis(), until)
         saveAll()
     }
 
@@ -106,7 +123,16 @@ object PunishmentManager {
     }
 
     fun getBan(uuid: UUID): BanEntry? = bans[uuid]
-    fun isBanned(uuid: UUID): Boolean = bans.containsKey(uuid)
+
+    fun isBanned(uuid: UUID): Boolean {
+        val entry = bans[uuid] ?: return false
+        if (entry.until == -1L) return true // permanent
+        if (entry.until > System.currentTimeMillis()) return true
+        // if ban expired, delete it
+        bans.remove(uuid)
+        saveAll()
+        return false
+    }
 
     fun warn(uuid: UUID, reason: String, issuer: String) {
         val entry = WarnEntry(uuid, reason, issuer, System.currentTimeMillis())
@@ -115,4 +141,20 @@ object PunishmentManager {
     }
 
     fun getWarns(uuid: UUID): List<WarnEntry> = warns[uuid] ?: emptyList()
+
+    private fun parseDuration(input: String): Long? {
+        if (input.trim().lowercase() in listOf("perm", "permanent")) return -1L
+        val regex = Regex("^(\\d+)(s|mo|m|h|d|w)$")
+        val match = regex.matchEntire(input.trim()) ?: return null
+        val amount = match.groupValues[1].toLong()
+        return when (match.groupValues[2]) {
+            "s"  -> System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(amount)
+            "m"  -> System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(amount)
+            "h"  -> System.currentTimeMillis() + TimeUnit.HOURS.toMillis(amount)
+            "d"  -> System.currentTimeMillis() + TimeUnit.DAYS.toMillis(amount)
+            "w"  -> System.currentTimeMillis() + TimeUnit.DAYS.toMillis(7 * amount)
+            "mo" -> System.currentTimeMillis() + TimeUnit.DAYS.toMillis(30 * amount)
+            else -> null
+        }
+    }
 }
