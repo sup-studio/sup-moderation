@@ -2,3 +2,25 @@ name: sup-moderation
 version: '1.0-SNAPSHOT'
 main: net.sup.moderation.SupModeration
 api-version: '1.21'
+commands:
+  ban:
+    description: Bans a player
+    usage: /ban
+  unban:
+    description: Unbans a player
+    usage: /unban
+  warn:
+    description: Warns a player
+    usage: /warn
+  report:
+    description: Reports a player
+    usage: /report
+permissions:
+  sup.moderation.ban:
+    default: op
+  sup.moderation.unban:
+    default: op
+  sup.moderation.warn:
+    default: op
+  sup.moderation.reports.view:
+    default: op
